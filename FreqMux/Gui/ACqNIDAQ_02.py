@@ -15,12 +15,13 @@ from PyQt5 import Qt
 
 from pyqtgraph.parametertree import Parameter, ParameterTree
 
-import Pyxi.DataAcquisition_02 as DataAcq
-import Pyxi.GenAqcModule as NiConfig
+import FreqMux.DataAcquisition_02 as DataAcq
+import FreqMux.GenAqcModule as NiConfig
+
+import Modules.DemodModule as DemMod
+import Modules.CharacterizationModule as Charact
 
 import PyqtTools.FileModule as FileMod
-import PyqtTools.DemodModule as DemMod
-import PyqtTools.CharacterizationModule as Charact
 from PyqtTools.PlotModule import Plotter as TimePlt
 from PyqtTools.PlotModule import PlotterParameters as TimePltPars
 from PyqtTools.PlotModule import PSDPlotter as PSDPlt
