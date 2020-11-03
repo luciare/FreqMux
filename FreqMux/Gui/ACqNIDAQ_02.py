@@ -41,6 +41,10 @@ class MainWindow(Qt.QWidget):
         self.ResetGraph = Qt.QPushButton("Reset Graphics")
         layout.addWidget(self.ResetGraph)
         
+        self.FullTimer = Qt.QLabel()
+        layout.addWidget(self.FullTimer)
+        self.FullTimer.setText("0:00")
+        
         self.threadAqc = None
         self.threadSave = None
         self.threadPlotter = None
@@ -288,6 +292,12 @@ class MainWindow(Qt.QWidget):
 
             self.on_ResetGraph()
             
+            self.MainTimer = TimerMod.GeneralTimer()
+            self.MainTimer.TimerDone.connect(self.on_MainCounter)
+            self.FullTimer.setText("0:00")
+            self.MainTimer.InitTime = time.time()
+            self.MainTimer.start()
+            
             if self.DemodConfig.param('DemEnable').value() is True:
                 self.threadDemodAqc = DemMod.DemodThread(Signal=self.threadAqc.Vcoi,
                                                          **self.DemKwargs,
@@ -342,11 +352,16 @@ class MainWindow(Qt.QWidget):
             self.threadAqc.DaqInterface.Stop()
             self.threadAqc.terminate()
             self.threadAqc = None
+            
+            self.MainTimer.terminate()
 
             self.StopThreads()
 
             self.btnStart.setText("Start Gen and Adq!")
             
+    def on_MainCounter(self):
+        self.FullTimer.setText(str(format(self.MainTimer.ElapsedTime, ".2f")))
+        
 # #############################START Sweep Acquisition ####################
     def on_Sweep_start(self):
         if self.threadAqc is None:
