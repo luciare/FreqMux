@@ -20,6 +20,7 @@ import FreqMux.GenAqcModule as NiConfig
 
 import Modules.DemodModule as DemMod
 import Modules.CharacterizationModule as Charact
+import Modules.TimerMod as TimerMod
 
 import PyqtTools.FileModule as FileMod
 from PyqtTools.PlotModule import Plotter as TimePlt
@@ -59,15 +60,12 @@ class MainWindow(Qt.QWidget):
         self.SaveStateParams = FileMod.SaveSateParameters(QTparent=self,
                                                           name='FileState',
                                                           title='Save/load config')
-        # self.Parameters = Parameter.create(name='params',
-        #                                    type='group',
-        #                                    children=(self.SaveStateParams,))
+
 
 # #############################File##############################
         self.FileParams = FileMod.SaveFileParameters(QTparent=self,
                                                      name='FileDat',
                                                      title='Save data')
-        # self.Parameters.addChild(self.FileParams)
 
 # #############################Sweep Config##############################
         self.SwParams = Charact.SweepsConfig(QTparent=self,
@@ -76,9 +74,8 @@ class MainWindow(Qt.QWidget):
 # #############################Configuration##############################
         self.GenAcqParams = NiConfig.GenAcqConfig(name='NI DAQ Configuration')
         self.DemodConfig = self.GenAcqParams.param('DemodConfig')
-        # self.DemodConfig = DemMod.DemodParameters(name='DemodConfig')
 
-# #############################NormalPlots##############################
+# #############################Plots##############################
         self.PlotParams = TimePltPars(name='TimePlt',
                                       title='Time Plot Options')
 
@@ -91,7 +88,7 @@ class MainWindow(Qt.QWidget):
         self.DemodPsdPlotParams = PSDPltPars(name='DemodPSDPlt',
                                         title='Demod PSD Plot Options')
 
-
+# #############################PARAMETERS TREE###############################
         self.Parameters = Parameter.create(name='params',
                                            type='group',
                                            children=(self.SaveStateParams,
@@ -103,7 +100,7 @@ class MainWindow(Qt.QWidget):
                                                      self.DemodPlotParams,
                                                      self.DemodPsdPlotParams,
                                                      ))
-        # ############Instancias para cambios#################################
+# ############Instancias para cambios#################################
         self.GenAcqParams.param('CarriersConfig').sigTreeStateChanged.connect(self.on_CarriersConfig_changed)
         self.GenAcqParams.param('AcqConfig').param('FsGen').sigValueChanged.connect(self.on_FsScope_changed)
         self.GenAcqParams.param('AcqConfig').param('FsScope').sigValueChanged.connect(self.on_FsScope_changed)
@@ -207,9 +204,9 @@ class MainWindow(Qt.QWidget):
     def on_NewPlotConf(self):
         if self.threadPlotter is not None:
             ViewTime = self.PlotParams.param('ViewTime').value()
-            self.threadPlotter.SetViewTime(ViewTime)        
+            self.threadPlotter.SetViewTime(ViewTime)
             RefreshTime = self.PlotParams.param('RefreshTime').value()
-            self.threadPlotter.SetRefreshTime(RefreshTime)  
+            self.threadPlotter.SetRefreshTime(RefreshTime)
             
     def on_NewDemodPSDConf(self):
         if self.threadDemodPsdPlotter is not None:
@@ -404,7 +401,6 @@ class MainWindow(Qt.QWidget):
             
             self.on_ResetGraph()
 
-            # self.threadCharact.Timer.start(self.SweepsKwargs['TimeOut']*1000)
             self.threadCharact.start()
             self.threadDemodAqc.start()
             self.threadAqc.start()
@@ -424,7 +420,7 @@ class MainWindow(Qt.QWidget):
                 self.threadCharact.stop()
                 self.threadCharact.CharactEnd.disconnect()
                 self.threadCharact = None
-            
+
             self.StopThreads()
 # #############################Pause Sweep Acquisition ####################
     def on_Sweep_paused(self):
@@ -466,8 +462,6 @@ class MainWindow(Qt.QWidget):
                                                      )
             self.threadDemodAqc.NewData.connect(self.on_NewDemodSample)
             
-            
-            # self.threadCharact.Timer.start(self.SweepsKwargs['TimeOut']*1000)
             self.threadCharact.start()
             self.threadDemodAqc.start()
             self.threadAqc.start()
@@ -557,7 +551,6 @@ class MainWindow(Qt.QWidget):
         self.threadAqc.DaqInterface.VcmOut.StopTask()
         self.threadAqc.DaqInterface.SetVcm(Vcm=(-1)*self.threadCharact.NextVgs)
 
-        # self.threadCharact.Timer.start(self.SweepsKwargs['TimeOut']*1000)
         print('NEXT VGS SWEEP')
 
 # #############################Nex Vd Value##############################
@@ -577,9 +570,6 @@ class MainWindow(Qt.QWidget):
                                               FsGen=self.AcqKwargs['FsGen']
                                               )
         self.threadAqc.start()
-        
-        # self.threadCharact.Timer.timeout.connect(self.threadCharact.printTime)
-        # self.threadCharact.Timer.start(self.SweepsKwargs['TimeOut']*1000)
 
     def on_CharactEnd(self):
         print('END Charact')
