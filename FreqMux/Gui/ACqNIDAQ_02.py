@@ -32,20 +32,20 @@ class MainWindow(Qt.QWidget):
     ''' Main Window '''
     def __init__(self):
         super(MainWindow, self).__init__()
-
+        # set focus on mouse wheel
         self.setFocusPolicy(Qt.Qt.WheelFocus)
         layout = Qt.QVBoxLayout(self)
-
+        # Define Start Button
         self.btnStart = Qt.QPushButton("Start Gen and Adq!")
         layout.addWidget(self.btnStart)
-        
+        # Define Reset Graph button
         self.ResetGraph = Qt.QPushButton("Reset Graphics")
         layout.addWidget(self.ResetGraph)
-        
+        # Set Timer Clock
         self.FullTimer = Qt.QLabel()
         layout.addWidget(self.FullTimer)
         self.FullTimer.setText("0:00")
-        
+        # Set all Threads to None
         self.threadAqc = None
         self.threadSave = None
         self.threadPlotter = None
@@ -89,6 +89,7 @@ class MainWindow(Qt.QWidget):
                                         title='Demod PSD Plot Options')
 
 # #############################PARAMETERS TREE###############################
+        # Generate parameter tree in the desired order
         self.Parameters = Parameter.create(name='params',
                                            type='group',
                                            children=(self.SaveStateParams,
@@ -101,6 +102,7 @@ class MainWindow(Qt.QWidget):
                                                      self.DemodPsdPlotParams,
                                                      ))
 # ############Instancias para cambios#################################
+        # Connect functions to variable changes
         self.GenAcqParams.param('CarriersConfig').sigTreeStateChanged.connect(self.on_CarriersConfig_changed)
         self.GenAcqParams.param('AcqConfig').param('FsGen').sigValueChanged.connect(self.on_FsScope_changed)
         self.GenAcqParams.param('AcqConfig').param('FsScope').sigValueChanged.connect(self.on_FsScope_changed)
@@ -111,10 +113,10 @@ class MainWindow(Qt.QWidget):
         self.PlotParams.NewConf.connect(self.on_NewPlotConf)
         self.DemodPsdPlotParams.NewConf.connect(self.on_NewDemodPSDConf)
         self.DemodPlotParams.NewConf.connect(self.on_NewDemodPlotConf)
-        
+        # Connect sweep buttons to functions
         self.SwParams.param('SweepsConfig').param('Start/Stop Sweep').sigActivated.connect(self.on_Sweep_start)
         self.SwParams.param('SweepsConfig').param('Pause/ReStart Sweep').sigActivated.connect(self.on_Sweep_paused)
-        
+        # Init rows and sampling frequencies
         self.on_NRow_changed()
         self.on_FsScope_changed()
         
@@ -127,6 +129,7 @@ class MainWindow(Qt.QWidget):
 
         self.setGeometry(550, 10, 400, 700)
         self.setWindowTitle('MainWindow')
+        # Connect Main buttons to functions
         self.btnStart.clicked.connect(self.on_btnStart)
         self.ResetGraph.clicked.connect(self.on_ResetGraph)
 
@@ -146,12 +149,32 @@ class MainWindow(Qt.QWidget):
 
 # #############################Changes Emits##############################
     def on_CarriersConfig_changed(self):
+        '''
+        When configuration of some carrier has changed, demodulation
+        channels also change
+
+        Returns
+        -------
+        None.
+
+        '''
+        
         self.DemodPlotParams.SetChannels(self.GenAcqParams.GetChannels(
                                               self.GenAcqParams.Rows,
                                               self.GenAcqParams.GetCarriers())
                                          )
 
     def on_FsScope_changed(self):
+        '''
+        If the acquisition Sampling Frequency is changed it is needed to
+        change this parameter on plots and demodulation.
+
+        Returns
+        -------
+        None.
+
+        '''
+        
         n = round(self.GenAcqParams.FsGen.value() /
                   self.GenAcqParams.FsScope.value()
                   )
@@ -175,6 +198,17 @@ class MainWindow(Qt.QWidget):
                                                 )
 
     def on_DSFact_changed(self):
+        '''
+        Function used when Downsampling factor is changed.
+        If the Downsampling factor is higher than the minimum value of 
+        carrier frequencies, a warning is printed
+
+        Returns
+        -------
+        None.
+
+        '''
+        
         self.GenAcqParams.ReCalc_DSFact(self.GenAcqParams.BufferSize.value())
         self.DemodPsdPlotParams.param('Fs').setValue(self.GenAcqParams.DSFs.value())
         self.DemodPlotParams.param('Fs').setValue(self.GenAcqParams.DSFs.value())
@@ -182,6 +216,16 @@ class MainWindow(Qt.QWidget):
             print('WARNING: FsDemod is higher than FsMin')
 
     def on_NRow_changed(self):
+        '''
+        If the acquisition row channels change, it is noticed to plots and
+        demodulation
+
+        Returns
+        -------
+        None.
+
+        '''
+        
         self.PlotParams.SetChannels(self.GenAcqParams.GetRows())
         self.PsdPlotParams.ChannelConf = self.PlotParams.ChannelConf
         nChannels = self.PlotParams.param('nChannels').value()
@@ -196,12 +240,30 @@ class MainWindow(Qt.QWidget):
         self.DemodPsdPlotParams.param('nChannels').setValue(nChannels)
         
     def on_NewPSDConf(self):
+        '''
+        Used when PSD configuration is changed
+
+        Returns
+        -------
+        None.
+
+        '''
+        
         if self.threadPsdPlotter is not None:
             nFFT = self.PsdPlotParams.param('nFFT').value()
             nAvg = self.PsdPlotParams.param('nAvg').value()
             self.threadPsdPlotter.InitBuffer(nFFT=nFFT, nAvg=nAvg)
 
     def on_NewPlotConf(self):
+        '''
+        Used when Plot configuration is changed
+
+        Returns
+        -------
+        None.
+
+        '''
+        
         if self.threadPlotter is not None:
             ViewTime = self.PlotParams.param('ViewTime').value()
             self.threadPlotter.SetViewTime(ViewTime)
@@ -209,12 +271,30 @@ class MainWindow(Qt.QWidget):
             self.threadPlotter.SetRefreshTime(RefreshTime)
             
     def on_NewDemodPSDConf(self):
+        '''
+        Used when PSD configuration is changed
+
+        Returns
+        -------
+        None.
+
+        '''
+        
         if self.threadDemodPsdPlotter is not None:
             nFFT = self.DemodPsdPlotParams.param('nFFT').value()
             nAvg = self.DemodPsdPlotParams.param('nAvg').value()
             self.threadDemodPsdPlotter.InitBuffer(nFFT=nFFT, nAvg=nAvg)
 
     def on_NewDemodPlotConf(self):
+        '''
+        Used when Plot configuration is changed
+
+        Returns
+        -------
+        None.
+
+        '''
+        
         if self.threadDemodPlotter is not None:
             ViewTime = self.DemodPlotParams.param('ViewTime').value()
             self.threadDemodPlotter.SetViewTime(ViewTime)        
@@ -222,6 +302,15 @@ class MainWindow(Qt.QWidget):
             self.threadDemodPlotter.SetRefreshTime(RefreshTime)
 
     def on_ResetGraph(self):
+        '''
+        Function that stops or starts the different plots when needed
+
+        Returns
+        -------
+        None.
+
+        '''
+        
         if self.threadAqc is None:
             return
 
@@ -265,10 +354,23 @@ class MainWindow(Qt.QWidget):
 
 # #############################START Real Time Acquisition ####################
     def on_btnStart(self):
+        '''
+        This function is executed when start button is pressed.
+        In this function are defined and started threads need during the
+        acquisition
+
+        Returns
+        -------
+        None.
+
+        '''
+        
+        # If the acquisition thread is not running
         if self.threadAqc is None:
             print('started')
             self.treepar.setParameters(self.Parameters, showTop=False)
-
+            # acquisition and demodulation parameters are obtained from the
+            # tree
             self.AcqKwargs = self.GenAcqParams.GetAcqParams()
             self.DemKwargs = self.GenAcqParams.GetDemThreadParams()
             # Cálculo de la tensión VdPico
@@ -279,35 +381,43 @@ class MainWindow(Qt.QWidget):
             
             # Cálculo de la tensión Vsg     
             self.AcqKwargs['CMVoltage'] = (-1)*self.AcqKwargs['CMVoltage']
-            
+            # Acquisition thread is defined
             self.threadAqc = DataAcq.DataAcquisitionThread(**self.AcqKwargs) 
             self.threadAqc.NewMuxData.connect(self.on_NewSample)
+            # Carrier is set
             self.threadAqc.DaqInterface.SetSignal(Signal=self.threadAqc.Signal,
                                                   FsBase="",
                                                   FsGen=self.AcqKwargs['FsGen']
                                                   )
-
+            # graphs are started
             self.on_ResetGraph()
-            
+            # The main Timer is set to 00 and conected to a function
             self.MainTimer = TimerMod.GeneralTimer()
             self.MainTimer.TimerDone.connect(self.on_MainCounter)
             self.FullTimer.setText("0:00")
             self.MainTimer.InitTime = time.time()
+            # Maint timer is started
             self.MainTimer.start()
-            
+            # If demodulation is enabled
             if self.DemodConfig.param('DemEnable').value() is True:
+                # the demodulation thread is defined
                 self.threadDemodAqc = DemMod.DemodThread(Signal=self.threadAqc.Vcoi,
                                                          **self.DemKwargs,
                                                          )
                 self.threadDemodAqc.NewData.connect(self.on_NewDemodSample)
+                # And started
                 self.threadDemodAqc.start()
-            
+            # If Demodulation data is wanted to be saved
             if self.DemodConfig.param('Save Demod').value() is True:
+                # Fs is set to Demodulation FS and ChnNames is set to
+                # Demodulated channels
                 Fs = self.GenAcqParams.DSFs.value()
                 ChnNames = self.GenAcqParams.GetChannels(self.GenAcqParams.Rows,
                                                          self.GenAcqParams.GetCarriers()).keys()
                 ChnNames = np.array(list(ChnNames), dtype='S10')
+                # If data is wanted to be saved
                 if self.FileParams.param('Enabled').value():
+                    # FileKwargs are set
                     FilekwArgs = {'FileName': self.FileParams.FilePath().split(".")[0]+'_Demod.h5',
                                   'nChannels': self.GenAcqParams.NRows.value(),
                                   'Fs': Fs,
@@ -315,19 +425,23 @@ class MainWindow(Qt.QWidget):
                                   'MaxSize': self.FileParams.param('MaxSize').value(),
                                   'dtype': 'float',
                                   }
-
+                    # Saving thread is defined
                     self.threadDemodSave = FileMod.DataSavingThread(**FilekwArgs)
+                    # And started
                     self.threadDemodSave.start()
                     print('saveDemod')
                     print(FilekwArgs['FileName'])
-                    
+            # If no-demodulated data is going to be saved
             else:
+                # Fs and ChnNames are taken from acquisition parameters
                 Fs=self.GenAcqParams.FsScope.value(),
                 ChnNames=list(self.GenAcqParams.GetChannels(self.GenAcqParams.Rows,
                                                         self.GenAcqParams.GetCarriers()).keys())
             
                 ChnNames = np.array(list(ChnNames), dtype='S10')
+                # If data is wanted to be saved
                 if self.FileParams.param('Enabled').value():
+                    # FileKwargs are set
                     FilekwArgs = {'FileName': self.FileParams.FilePath(),
                                   'nChannels': self.GenAcqParams.NRows.value(),
                                   'Fs': Fs,
@@ -335,32 +449,53 @@ class MainWindow(Qt.QWidget):
                                   'MaxSize': self.FileParams.param('MaxSize').value(),
                                   'dtype': 'float',
                                   }
-                    
+                    # Saving thread is defined and started
                     self.threadSave = FileMod.DataSavingThread(**FilekwArgs)
                     self.threadSave.start()
-        
+            # Acquisition thread is started
             self.threadAqc.start()
             
             self.btnStart.setText("Stop Gen")
             self.OldTime = time.time()
+        # If the acquisition thread is running
         else:
+            # Acquisiton thread is stopped and terminated, and set to none
             print('stopped')
             self.threadAqc.NewMuxData.disconnect()
             self.threadAqc.DaqInterface.Stop()
             self.threadAqc.terminate()
             self.threadAqc = None
-            
+            # main timer thread is stopped
             self.MainTimer.terminate()
-
+            # and all the running threads are terminated
             self.StopThreads()
 
             self.btnStart.setText("Start Gen and Adq!")
             
     def on_MainCounter(self):
+        '''
+        Changes the text of the clock in the main gui to show the current
+        timing
+
+        Returns
+        -------
+        None.
+
+        '''
+        
         self.FullTimer.setText(str(format(self.MainTimer.ElapsedTime, ".2f")))
         
 # #############################START Sweep Acquisition ####################
     def on_Sweep_start(self):
+        '''
+        Function exectued when sweep start button is pushed
+
+        Returns
+        -------
+        None.
+
+        '''
+        
         if self.threadAqc is None:
             print('Sweep started')
             self.Paused = False
@@ -368,45 +503,50 @@ class MainWindow(Qt.QWidget):
             self.treepar.setParameters(self.Parameters, showTop=False)
 
             self.AcqKwargs = self.GenAcqParams.GetAcqParams()
-            self.DemKwargs = self.GenAcqParams.GetDemThreadParams()         
+            self.DemKwargs = self.GenAcqParams.GetDemThreadParams()  
+            # Kwargs for the sweep and the DC/AC dictionaries are obtained
+            # from the parameters tree
             self.SweepsKwargs = self.SwParams.GetConfigSweepsParams()
             self.DcSaveKwargs = self.SwParams.GetSaveSweepsParams()
-          
-
-            
+            # Characterization thread is defined
             self.threadCharact = Charact.StbDetThread(nChannels=self.GenAcqParams.NRows.value()*len(self.GenAcqParams.Freqs),
                                                       ChnName=self.GenAcqParams.GetChannels(self.GenAcqParams.Rows,
                                                                                            self.GenAcqParams.GetCarriers()),
                                                       PlotterDemodKwargs=self.DemodPsdPlotParams.GetParams(),
                                                       **self.SweepsKwargs
                                                       )
+            # Next Vg and Vd signals are connected to their functions
             self.threadCharact.NextVg.connect(self.on_NextVg)
             self.threadCharact.NextVd.connect(self.on_NextVd)
+            # The end characterization signal is also connected
             self.threadCharact.CharactEnd.connect(self.on_CharactEnd)
 
-            print(self.AcqKwargs)
+            # The acquisition thread is defined
             self.threadAqc = DataAcq.DataAcquisitionThread(**self.AcqKwargs) 
             self.threadAqc.NewMuxData.connect(self.on_NewSample)
+            # Carrier amplitude is defined using the first point of Vd sweep
             self.threadAqc.OutSignal(Vds=np.sqrt(2)*self.threadCharact.NextVds)
+            # Polarization voltage is defined using first point of Vg sweep
             self.threadAqc.Vcm = (-1)*self.threadCharact.NextVgs
+            # The carrier is defined
             self.threadAqc.DaqInterface.SetSignal(Signal=self.threadAqc.Signal,
                                                   FsBase="",
                                                   FsGen=self.AcqKwargs['FsGen']
                                                   )
-            
+            # The demodulation thread is defined
             self.threadDemodAqc = DemMod.DemodThread(Signal=self.threadAqc.Vcoi,
                                                      **self.DemKwargs,
                                                      )
             self.threadDemodAqc.NewData.connect(self.on_NewDemodSample)
-            
+            # graphs are initialized
             self.on_ResetGraph()
-
+            # all the threads are started
             self.threadCharact.start()
             self.threadDemodAqc.start()
             self.threadAqc.start()
-            
+
             self.OldTime = time.time()
-            
+
         else:
             print('stopped')
             self.threadAqc.NewMuxData.disconnect()
@@ -498,6 +638,7 @@ class MainWindow(Qt.QWidget):
         # print('NEWSAMPLE')
         Ts = time.time() - self.OldTime
         self.OldTime = time.time()
+        # OutData is in Amperes, OutDataVolts is in Volts
         if self.threadSave is not None:
             print('saveRow')
             self.threadSave.AddData(self.threadAqc.OutData)
@@ -516,6 +657,15 @@ class MainWindow(Qt.QWidget):
 
 # #############################New Sample To Demodulate#######################
     def on_NewDemodSample(self):
+        '''
+        Visualization of streaming data-WorkThread
+
+        Returns
+        -------
+        None.
+
+        '''
+        # OutDemodData is set depending on the config. selected in the gui
         if self.DemodConfig.param('OutType').value() == 'Abs':
             OutDemodData = np.abs(self.threadDemodAqc.OutDemodData)
         elif self.DemodConfig.param('OutType').value() == 'Real':
@@ -524,10 +674,10 @@ class MainWindow(Qt.QWidget):
             OutDemodData = np.imag(self.threadDemodAqc.OutDemodData)
         elif self.DemodConfig.param('OutType').value() == 'Angle':
             OutDemodData = np.angle(self.threadDemodAqc.OutDemodData, deg=True)
-
+        # if the acquisition is single ended
         if self.AcqKwargs['AcqDiff'] is False:
             OutDemodData = 2*OutDemodData
-            
+        # The data is sent to the characterization as RMS data
         if self.threadCharact is not None:
             # print('Demod Done')
             self.threadCharact.AddData(OutDemodData/np.sqrt(2))  # (RMS)
@@ -548,6 +698,16 @@ class MainWindow(Qt.QWidget):
 
 # #############################Restart Timer Stabilization####################
     def on_NextVg(self):
+        '''
+        Exectued when a Vg sweep is finished.
+        Stops DaqCard Vcm taks and set Vcm to the next Vg sweep value
+
+        Returns
+        -------
+        None.
+
+        '''
+        
         self.threadAqc.DaqInterface.VcmOut.StopTask()
         self.threadAqc.DaqInterface.SetVcm(Vcm=(-1)*self.threadCharact.NextVgs)
 
@@ -555,6 +715,17 @@ class MainWindow(Qt.QWidget):
 
 # #############################Nex Vd Value##############################
     def on_NextVd(self):
+        '''
+        Exectued when a Vd sweep is finished.
+        Terminates Acquisition Thread and defines it again with the next
+        Vg sweep value.
+
+        Returns
+        -------
+        None.
+
+        '''
+        
         self.threadAqc.NewMuxData.disconnect()
         self.threadAqc.DaqInterface.Stop()
         self.threadAqc.terminate()
@@ -572,6 +743,15 @@ class MainWindow(Qt.QWidget):
         self.threadAqc.start()
 
     def on_CharactEnd(self):
+        '''
+        
+
+        Returns
+        -------
+        None.
+
+        '''
+        
         print('END Charact')
         self.threadCharact.NextVg.disconnect()
         self.threadCharact.NextVd.disconnect()
