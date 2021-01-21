@@ -766,8 +766,7 @@ class MainWindow(Qt.QWidget):
                             continue
                         else:
                             CharactDCDict[k]['Ids'][indexR, indexC] = d
-                             
-            
+
             if CharactACDict is not None:
                 self.PauseDevACDict.update(CharactACDict)
                 CharactACDict = self.PauseDevACDict
